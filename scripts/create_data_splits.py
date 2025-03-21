@@ -3,7 +3,7 @@ Create the data splits for all settings (new reader, new sentence, combined (= n
 (i.e., train on celer test on zuco) to keep train and test data consistent across all baselines and for hyper-parameter tuning.
 Save all data sets as well as only the reader and sn ids (for the baselines).
 """
-from datasets import DatasetDict
+
 import argparse
 import os
 import numpy as np
@@ -219,31 +219,32 @@ def main():
 
         # call the split 'train' so that the data is not split at all; use all zuco data for inference
         print('Loading ZuCo data...')
-        test_data = process_zuco(
+        train_data,test_data,val_data = process_zuco(
             sn_list=sn_list,
             reader_list=reader_list,
             word_info_df=word_info_df,
             eyemovement_df=eyemovement_df,
             tokenizer=tokenizer,
             args=args,
-            split='train',
+            split='train-val-test',
             splitting_criterion=args.data_split_criterion,
         )
-        if isinstance(test_data, DatasetDict):
-            print("test_data 是一个 DatasetDict 对象")
-        else:
-            print("test_data 不是一个 DatasetDict 对象")
-        save_path = os.path.join(data_path, 'test_data')
-        os.makedirs(save_path, exist_ok=True)  # 确保目录存在
-        test_data.save_to_disk(save_path)
-        test_data.save_to_disk(os.path.join(data_path, 'test_data'))
+        train_data.save_to_disk(os.path.join(data_path, 'train_data'))
+        val_data.save_to_disk(os.path.join(data_path, 'val_data'))
 
-        # save test IDs
+        test_data.save_to_disk(os.path.join(data_path, 'test_data'))
         test_ids = [[sn_id, reader_id] for sn_id, reader_id in zip(
-            test_data['train']['sn_ids'], test_data['train']['reader_ids']
+            test_data['test']['sn_ids'], test_data['test']['reader_ids']
         )]
         with open(os.path.join(data_path, 'test_ids.npy'), 'wb') as f:
             np.save(f, test_ids, allow_pickle=True)
+        train_sn_ids = train_data['train']['sn_ids'] + val_data['val']['sn_ids']
+        train_reader_ids = train_data['train']['reader_ids'] + val_data['val']['reader_ids']
+        train_ids = [[sn_id, reader_id] for sn_id, reader_id in zip(train_sn_ids, train_reader_ids)]
+        with open(os.path.join(data_path, 'train_ids.npy'), 'wb') as f:
+            np.save(f, train_ids, allow_pickle=True)
+        # save test IDs
+
 
 
 if __name__ == '__main__':

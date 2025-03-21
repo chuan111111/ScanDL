@@ -870,7 +870,7 @@ def process_zuco(
     all_lens = list()
 
     reader_IDs, sn_IDs = list(), list()
-
+    print('Processing ZuCo dataset...')
     for sn_id_idx, sn_id in tqdm(enumerate(sn_list), total=len(sn_list)):
 
         if subset_size is not None:
@@ -1028,7 +1028,7 @@ def process_zuco(
         'reader': reader_IDs,
         'sentence': sn_IDs,
     }
-
+    print('Max length of input: ')
     if split == 'train':
 
         dataset = Dataset2.from_dict(data)
@@ -1179,7 +1179,7 @@ def process_zuco(
             return train_data_dict, val_data_dict
 
         elif split == 'train-val-test':
-
+            print('splitting data into train, val and test')
             if split_sizes:
                 val_size = split_sizes['val_size']
                 test_size = split_sizes['test_size']
@@ -1258,6 +1258,7 @@ def process_zuco(
                     'mask_sn_padding': [instance[6] for instance in val_data],
                     'mask_transformer_att': [instance[7] for instance in val_data],
                     'sn_ids': [instance[8] for instance in val_data],
+                    'reader_ids': [instance[9] for instance in val_data],
                 }
             )
             train_data_dict = datasets.DatasetDict()
