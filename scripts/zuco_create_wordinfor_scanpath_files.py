@@ -23,6 +23,7 @@ def ZUCO_read_words(directory: str, task: str) -> None:
         directory = directory + 'zuco2/'
     else:
         raise NotImplementedError(f'{task=} unknown')
+    print(f'task: {task}, task[-1]: {task[-1]}')
     directory = os.path.join(directory, f'task{task[-1]}', 'Matlab_files')
     save_path = directory + '/Word_Infor.csv'
     sub_file_path = {}

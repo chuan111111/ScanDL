@@ -3,7 +3,7 @@ Create the data splits for all settings (new reader, new sentence, combined (= n
 (i.e., train on celer test on zuco) to keep train and test data consistent across all baselines and for hyper-parameter tuning.
 Save all data sets as well as only the reader and sn ids (for the baselines).
 """
-
+from datasets import DatasetDict
 import argparse
 import os
 import numpy as np
@@ -46,126 +46,126 @@ def main():
 
     # load celer for all settings except cross-dataset
 
-    print('Loading word info and eye movement df...')
-    word_info_df, eyemovement_df = load_celer()
-    reader_list = load_celer_speakers(only_native_speakers=args.celer_only_L1)
-    sn_list = np.unique(word_info_df[word_info_df['list'].isin(reader_list)].sentenceid.values).tolist()
+    # print('Loading word info and eye movement df...')
+    # word_info_df, eyemovement_df = load_celer()
+    # reader_list = load_celer_speakers(only_native_speakers=args.celer_only_L1)
+    # sn_list = np.unique(word_info_df[word_info_df['list'].isin(reader_list)].sentenceid.values).tolist()
 
-    print('Loading data for within dataset evaluation...')
-    data, splitting_IDs_dict = process_celer(
-        sn_list=sn_list,
-        reader_list=reader_list,
-        word_info_df=word_info_df,
-        eyemovement_df=eyemovement_df,
-        tokenizer=tokenizer,
-        args=args,
-        inference='cv',
-        # subset_size=200,
-    )
+    # print('Loading data for within dataset evaluation...')
+    # data, splitting_IDs_dict = process_celer(
+    #     sn_list=sn_list,
+    #     reader_list=reader_list,
+    #     word_info_df=word_info_df,
+    #     eyemovement_df=eyemovement_df,
+    #     tokenizer=tokenizer,
+    #     args=args,
+    #     inference='cv',
+    #     # subset_size=200,
+    # )
 
-    # flatten the data for subsequent splitting
-    flattened_data = flatten_data(data)
+    # # flatten the data for subsequent splitting
+    # flattened_data = flatten_data(data)
 
-    for data_split_criterion, inference in cv_settings:
+    # for data_split_criterion, inference in cv_settings:
 
-        data_path = os.path.join('processed_data', data_split_criterion)
-        if not os.path.exists(data_path):
-            os.makedirs(data_path)
+    #     data_path = os.path.join('processed_data', data_split_criterion)
+    #     if not os.path.exists(data_path):
+    #         os.makedirs(data_path)
 
-        args.data_split_criterion = data_split_criterion
-        args.inference = inference
+    #     args.data_split_criterion = data_split_criterion
+    #     args.inference = inference
 
-        if args.data_split_criterion != 'combined':
-            for fold_idx, (train_idx, test_idx) in enumerate(
-                get_kfold(
-                    data=flattened_data,
-                    splitting_IDs_dict=splitting_IDs_dict,
-                    splitting_criterion=args.data_split_criterion,
-                    n_splits=args.n_folds,
-                )
-            ):
-                fold_path = os.path.join(data_path, f'fold-{fold_idx}')
-                if not os.path.exists(fold_path):
-                    os.makedirs(fold_path)
+    #     if args.data_split_criterion != 'combined':
+    #         for fold_idx, (train_idx, test_idx) in enumerate(
+    #             get_kfold(
+    #                 data=flattened_data,
+    #                 splitting_IDs_dict=splitting_IDs_dict,
+    #                 splitting_criterion=args.data_split_criterion,
+    #                 n_splits=args.n_folds,
+    #             )
+    #         ):
+    #             fold_path = os.path.join(data_path, f'fold-{fold_idx}')
+    #             if not os.path.exists(fold_path):
+    #                 os.makedirs(fold_path)
 
-                train_data = np.array(flattened_data, dtype=object)[train_idx].tolist()
-                test_data = np.array(flattened_data, dtype=object)[test_idx].tolist()
+    #             train_data = np.array(flattened_data, dtype=object)[train_idx].tolist()
+    #             test_data = np.array(flattened_data, dtype=object)[test_idx].tolist()
 
-                # save the train and test IDs separately (though they are also contained within train_data/test_data)
-                train_ids_reader = np.array(splitting_IDs_dict['reader'])[train_idx].tolist()
-                train_ids_sn = np.array(splitting_IDs_dict['sentence'])[train_idx].tolist()
-                test_ids_reader = np.array(splitting_IDs_dict['reader'])[test_idx].tolist()
-                test_ids_sn = np.array(splitting_IDs_dict['sentence'])[test_idx].tolist()
-                train_ids = [[tr_s, tr_r] for tr_s, tr_r in zip(train_ids_sn, train_ids_reader)]
-                test_ids = [[tr_s, tr_r] for tr_s, tr_r in zip(test_ids_sn, test_ids_reader)]
-                with open(os.path.join(fold_path, 'test_ids.npy'), 'wb') as f:
-                    np.save(f, test_ids, allow_pickle=True)
-                with open(os.path.join(fold_path, 'train_ids.npy'), 'wb') as f:
-                    np.save(f, train_ids, allow_pickle=True)
+    #             # save the train and test IDs separately (though they are also contained within train_data/test_data)
+    #             train_ids_reader = np.array(splitting_IDs_dict['reader'])[train_idx].tolist()
+    #             train_ids_sn = np.array(splitting_IDs_dict['sentence'])[train_idx].tolist()
+    #             test_ids_reader = np.array(splitting_IDs_dict['reader'])[test_idx].tolist()
+    #             test_ids_sn = np.array(splitting_IDs_dict['sentence'])[test_idx].tolist()
+    #             train_ids = [[tr_s, tr_r] for tr_s, tr_r in zip(train_ids_sn, train_ids_reader)]
+    #             test_ids = [[tr_s, tr_r] for tr_s, tr_r in zip(test_ids_sn, test_ids_reader)]
+    #             with open(os.path.join(fold_path, 'test_ids.npy'), 'wb') as f:
+    #                 np.save(f, test_ids, allow_pickle=True)
+    #             with open(os.path.join(fold_path, 'train_ids.npy'), 'wb') as f:
+    #                 np.save(f, train_ids, allow_pickle=True)
 
-                # save the train data
-                train_data_save = unflatten_data(flattened_data=train_data, split='train')
-                train_data_save.save_to_disk(os.path.join(fold_path, 'train_data'))
+    #             # save the train data
+    #             train_data_save = unflatten_data(flattened_data=train_data, split='train')
+    #             train_data_save.save_to_disk(os.path.join(fold_path, 'train_data'))
 
-                # save the test data
-                test_data_save = unflatten_data(flattened_data=test_data, split='test')
-                test_data_save.save_to_disk(os.path.join(fold_path, 'test_data'))
+    #             # save the test data
+    #             test_data_save = unflatten_data(flattened_data=test_data, split='test')
+    #             test_data_save.save_to_disk(os.path.join(fold_path, 'test_data'))
 
-        else:  # new reader/new sentence setting
-            reader_indices, sentence_indices = get_kfold_indices_combined(
-                data=flattened_data,
-                splitting_IDs_dict=splitting_IDs_dict,
-            )
+    #     else:  # new reader/new sentence setting
+    #         reader_indices, sentence_indices = get_kfold_indices_combined(
+    #             data=flattened_data,
+    #             splitting_IDs_dict=splitting_IDs_dict,
+    #         )
 
-            reader_IDs = splitting_IDs_dict['reader']
-            sn_IDs = splitting_IDs_dict['sentence']
+    #         reader_IDs = splitting_IDs_dict['reader']
+    #         sn_IDs = splitting_IDs_dict['sentence']
 
-            for fold_idx, ((reader_train_idx, reader_test_idx), (sn_train_idx, sn_test_idx)) in enumerate(
-                zip(reader_indices, sentence_indices)
-            ):
-                fold_path = os.path.join(data_path, f'fold-{fold_idx}')
-                if not os.path.exists(fold_path):
-                    os.makedirs(fold_path)
+    #         for fold_idx, ((reader_train_idx, reader_test_idx), (sn_train_idx, sn_test_idx)) in enumerate(
+    #             zip(reader_indices, sentence_indices)
+    #         ):
+    #             fold_path = os.path.join(data_path, f'fold-{fold_idx}')
+    #             if not os.path.exists(fold_path):
+    #                 os.makedirs(fold_path)
 
-                # create data sets with only unique readers and sentences in test set
-                unique_reader_test_IDs = set(np.array(reader_IDs)[reader_test_idx].tolist())
-                unique_sn_test_IDs = set(np.array(sn_IDs)[sn_test_idx].tolist())
+    #             # create data sets with only unique readers and sentences in test set
+    #             unique_reader_test_IDs = set(np.array(reader_IDs)[reader_test_idx].tolist())
+    #             unique_sn_test_IDs = set(np.array(sn_IDs)[sn_test_idx].tolist())
 
-                # subset the data: if an ID is both in the IDs for sentence and reader sampled for the test set,
-                # add the data point to the test data; if it is in neither of them, add to train data. if
-                # in one of them, unfortunately discard
-                train_data, test_data = list(), list()
-                train_ids, test_ids = list(), list()
-                for i in range(len(flattened_data)):
-                    if reader_IDs[i] in unique_reader_test_IDs and sn_IDs[i] in unique_sn_test_IDs:
-                        test_data.append(flattened_data[i])
-                        test_ids.append([sn_IDs[i], reader_IDs[i]])
-                    elif reader_IDs[i] not in unique_reader_test_IDs and sn_IDs[i] not in unique_sn_test_IDs:
-                        train_data.append(flattened_data[i])
-                        train_ids.append([sn_IDs[i], reader_IDs[i]])
-                    else:
-                        continue
+    #             # subset the data: if an ID is both in the IDs for sentence and reader sampled for the test set,
+    #             # add the data point to the test data; if it is in neither of them, add to train data. if
+    #             # in one of them, unfortunately discard
+    #             train_data, test_data = list(), list()
+    #             train_ids, test_ids = list(), list()
+    #             for i in range(len(flattened_data)):
+    #                 if reader_IDs[i] in unique_reader_test_IDs and sn_IDs[i] in unique_sn_test_IDs:
+    #                     test_data.append(flattened_data[i])
+    #                     test_ids.append([sn_IDs[i], reader_IDs[i]])
+    #                 elif reader_IDs[i] not in unique_reader_test_IDs and sn_IDs[i] not in unique_sn_test_IDs:
+    #                     train_data.append(flattened_data[i])
+    #                     train_ids.append([sn_IDs[i], reader_IDs[i]])
+    #                 else:
+    #                     continue
 
-                # save the train data
-                train_data_save = unflatten_data(flattened_data=train_data, split='train')
-                train_data_save.save_to_disk(os.path.join(fold_path, 'train_data'))
+    #             # save the train data
+    #             train_data_save = unflatten_data(flattened_data=train_data, split='train')
+    #             train_data_save.save_to_disk(os.path.join(fold_path, 'train_data'))
 
-                # save the test data
-                test_data_save = unflatten_data(flattened_data=test_data, split='test')
-                test_data_save.save_to_disk(os.path.join(fold_path, 'test_data'))
+    #             # save the test data
+    #             test_data_save = unflatten_data(flattened_data=test_data, split='test')
+    #             test_data_save.save_to_disk(os.path.join(fold_path, 'test_data'))
 
-                # save the train and test ids
-                with open(os.path.join(fold_path, 'test_ids.npy'), 'wb') as f:
-                    np.save(f, test_ids, allow_pickle=True)
-                with open(os.path.join(fold_path, 'train_ids.npy'), 'wb') as f:
-                    np.save(f, train_ids, allow_pickle=True)
+    #             # save the train and test ids
+    #             with open(os.path.join(fold_path, 'test_ids.npy'), 'wb') as f:
+    #                 np.save(f, test_ids, allow_pickle=True)
+    #             with open(os.path.join(fold_path, 'train_ids.npy'), 'wb') as f:
+    #                 np.save(f, train_ids, allow_pickle=True)
 
-    del data
-    del splitting_IDs_dict
-    del word_info_df
-    del eyemovement_df
-    del reader_list
-    del sn_list
+    # del data
+    # del splitting_IDs_dict
+    # del word_info_df
+    # del eyemovement_df
+    # del reader_list
+    # del sn_list
 
     # load and save the data for the cross-dataset evaluation (i.e., train celer, test zuco)
     for data_split_criterion, inference in cross_dataset_settings:
@@ -178,30 +178,30 @@ def main():
 
         split_sizes = {'val_size': 0.1}
 
-        word_info_df, eyemovement_df = load_celer()
-        reader_list = load_celer_speakers(only_native_speakers=args.celer_only_L1)
-        sn_list = np.unique(word_info_df[word_info_df['list'].isin(reader_list)].sentenceid.values).tolist()
-        print('Loading data for cross dataset evaluation...')
-        train_data, val_data = process_celer(
-            sn_list=sn_list,
-            reader_list=reader_list,
-            word_info_df=word_info_df,
-            eyemovement_df=eyemovement_df,
-            tokenizer=tokenizer,
-            args=args,
-            split='train-val',
-            split_sizes=split_sizes,
-            splitting_criterion=args.data_split_criterion,
-        )
-        train_data.save_to_disk(os.path.join(data_path, 'train_data'))
-        val_data.save_to_disk(os.path.join(data_path, 'val_data'))
+        # word_info_df, eyemovement_df = load_celer()
+        # reader_list = load_celer_speakers(only_native_speakers=args.celer_only_L1)
+        # sn_list = np.unique(word_info_df[word_info_df['list'].isin(reader_list)].sentenceid.values).tolist()
+        # print('Loading data for cross dataset evaluation...')
+        # train_data, val_data = process_celer(
+        #     sn_list=sn_list,
+        #     reader_list=reader_list,
+        #     word_info_df=word_info_df,
+        #     eyemovement_df=eyemovement_df,
+        #     tokenizer=tokenizer,
+        #     args=args,
+        #     split='train-val',
+        #     split_sizes=split_sizes,
+        #     splitting_criterion=args.data_split_criterion,
+        # )
+        # train_data.save_to_disk(os.path.join(data_path, 'train_data'))
+        # val_data.save_to_disk(os.path.join(data_path, 'val_data'))
 
         # save the train IDs (i.e., including the validation IDs --> used for the baselines)
-        train_sn_ids = train_data['train']['sn_ids'] + val_data['val']['sn_ids']
-        train_reader_ids = train_data['train']['reader_ids'] + val_data['val']['reader_ids']
-        train_ids = [[sn_id, reader_id] for sn_id, reader_id in zip(train_sn_ids, train_reader_ids)]
-        with open(os.path.join(data_path, 'train_ids.npy'), 'wb') as f:
-            np.save(f, train_ids, allow_pickle=True)
+        # train_sn_ids = train_data['train']['sn_ids'] + val_data['val']['sn_ids']
+        # train_reader_ids = train_data['train']['reader_ids'] + val_data['val']['reader_ids']
+        # train_ids = [[sn_id, reader_id] for sn_id, reader_id in zip(train_sn_ids, train_reader_ids)]
+        # with open(os.path.join(data_path, 'train_ids.npy'), 'wb') as f:
+        #     np.save(f, train_ids, allow_pickle=True)
 
         # loading ZuCo: onla ZuCo (1), not ZuCo2.0
         # only tasks 1 (Sentiment) and task 2 (Wikipedia), which are normal reading
@@ -229,6 +229,13 @@ def main():
             split='train',
             splitting_criterion=args.data_split_criterion,
         )
+        if isinstance(test_data, DatasetDict):
+            print("test_data 是一个 DatasetDict 对象")
+        else:
+            print("test_data 不是一个 DatasetDict 对象")
+        save_path = os.path.join(data_path, 'test_data')
+        os.makedirs(save_path, exist_ok=True)  # 确保目录存在
+        test_data.save_to_disk(save_path)
         test_data.save_to_disk(os.path.join(data_path, 'test_data'))
 
         # save test IDs
